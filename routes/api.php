@@ -6,27 +6,45 @@ use App\Models\instansi;
 use App\Models\kendaraan;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Facades\Route;
 
-/*
-|--------------------------------------------------------------------------
-| API Routes
-|--------------------------------------------------------------------------
-|
-| Here is where you can register API routes for your application. These
-| routes are loaded by the RouteServiceProvider within a group which
-| is assigned the "api" middleware group. Enjoy building your API!
-|
-*/
-
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('user')->group(function () {
-        // Route::get('/', function (Request $request) {
-        //     return $request->user();  // /user
-        // });
+
+        Route::get('/data_rekap', function (Request $request) {
+            $sql = "
+                SELECT 
+                    instansi.nama_instansi AS instansi, 
+                    kendaraan.jenis_roda AS jenis_Roda, 
+                    COUNT(kendaraan.id) AS jumlah_Kendaraan,
+                    COUNT(DISTINCT asn.id) AS jumlah_asn
+                FROM asn
+                INNER JOIN instansi ON asn.id_instansi = instansi.id
+                INNER JOIN kendaraan ON asn.id = kendaraan.id_user
+                WHERE 
+                    kendaraan.jenis_roda IN ('roda 2', 'roda 4')
+                    OR instansi.nama_instansi IN ('Dinas pendidikan', 'Dinas kesehatan', 'Dinas perhubungan')
+                GROUP BY 
+                    instansi.nama_instansi, kendaraan.jenis_roda";
+
+            $data = DB::select($sql);
+            return response()->json($data);
+        });
+
+        Route::get('/data_kendaraan', function (Request $request) {
+            $sql = "
+            SELECT * FROM asn 
+            INNER JOIN kendaraan ON asn.id = kendaraan.id_user
+            ";
+
+            $data = DB::select($sql);
+            return response()->json($data);
+        });
+
         Route::get('/checkdata', function (Request $request) {
             return $request->user();  // /user/checkdata
         });
@@ -131,9 +149,6 @@ Route::middleware('auth:sanctum')->group(function () {
             return response()->json(['message' => 'ASN Updated'], 200);
         });
 
-
-
-
         Route::post('/insertasn', function (Request $request) {
             $asn = new asn();
             $asn->nama_asn = $request->nama_asn;
@@ -143,8 +158,6 @@ Route::middleware('auth:sanctum')->group(function () {
 
             return response()->json(['message' => 'ASN Berhasil DI INSERT'], 200);
         });
-
-
 
         Route::post('/deleteasn/{id}', function ($id) {
             $asn = asn::find($id);
@@ -158,8 +171,6 @@ Route::middleware('auth:sanctum')->group(function () {
             return response()->json(['message' => 'Delete Asn Berhasil']);
         });
 
-
-
         Route::post('/deletekendaraan/{id}', function ($id) {
             $kendaraan = kendaraan::find($id);
             if (!$kendaraan) {
@@ -170,8 +181,6 @@ Route::middleware('auth:sanctum')->group(function () {
 
             return response()->json(['message' => 'Kendaraan Berhasil']);
         });
-
-
 
         Route::post('/insertkendaraan', function (Request $request) {
 
@@ -185,8 +194,6 @@ Route::middleware('auth:sanctum')->group(function () {
             $kendaraan->save();
             return response()->json(['message' => 'Kendaraan Berhasil DI INSERT'], 200);
         });
-
-
 
         Route::post('/updatekendaraan/{id}', function ($id, Request $request) {
             $kendaraan = kendaraan::find($id);
